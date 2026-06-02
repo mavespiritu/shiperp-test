@@ -1,58 +1,140 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SHIPERP
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+SHIPERP is a Laravel 13 application that exposes a small weather API backed by OpenWeatherMap.
 
-## About Laravel
+It includes:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- A public landing page at `/`
+- Weather endpoints at `/api/weather/{city}` and `/api/weather/{city}/cached`
+- Cached weather responses with a 10-minute TTL
+- JSON error responses for missing API keys, unknown cities, and upstream failures
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3
+- Laravel 13
+- Laravel Sanctum
+- Laravel Actions
+- Vite
+- Tailwind CSS 4
+- Pest for testing
 
-## Learning Laravel
+## Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.3 or newer
+- Composer
+- Node.js and npm
+- A MySQL database
+- An OpenWeatherMap API key
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Setup
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+1. Install PHP dependencies:
 
-## Agentic Development
+   ```bash
+   composer install
+   ```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+2. Create your environment file:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Generate the application key:
+
+   ```bash
+   php artisan key:generate
+   ```
+
+4. Configure your `.env` values, especially:
+
+   - `DB_DATABASE`
+   - `DB_USERNAME`
+   - `DB_PASSWORD`
+   - `OPENWEATHERMAP_API_KEY`
+
+5. Run the database migrations:
+
+   ```bash
+   php artisan migrate
+   ```
+
+6. Install frontend dependencies and build assets:
+
+   ```bash
+   npm install
+   npm run build
+   ```
+
+## Running The App
+
+Start the Laravel server:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+If you want the full local development stack, use the Composer dev script:
 
-## Contributing
+```bash
+composer run dev
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+That starts:
 
-## Code of Conduct
+- `php artisan serve`
+- `php artisan queue:listen`
+- `php artisan pail`
+- `npm run dev`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## API
 
-## Security Vulnerabilities
+### `GET /api/weather/{city}`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Fetches the latest weather data for a city from OpenWeatherMap.
 
-## License
+Example response:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```json
+{
+  "city": "Manila",
+  "temperature": 30.5,
+  "weather_description": "scattered clouds",
+  "timestamp": "2026-06-02T00:00:00.000000Z",
+  "source": "external"
+}
+```
+
+### `GET /api/weather/{city}/cached`
+
+Returns the weather data from cache when available, otherwise fetches fresh data and stores it for 10 minutes.
+
+The `source` field will be:
+
+- `external` on the first request
+- `cache` on subsequent requests within the cache window
+
+## Error Responses
+
+The weather endpoints return JSON errors when something goes wrong:
+
+- `500` if `OPENWEATHERMAP_API_KEY` is missing
+- `404` if the city is not found
+- `502` if the upstream weather service fails
+
+## Testing
+
+Run the test suite with:
+
+```bash
+php artisan test
+```
+
+The weather API tests fake the OpenWeatherMap HTTP response, so they can run without hitting the real service.
+
+## Notes
+
+- The root page at `/` is currently a simple Laravel welcome view.
+- Weather configuration lives in [`config/services.php`](config/services.php).
+- The weather logic is implemented in [`app/Services/Weather/WeatherService.php`](app/Services/Weather/WeatherService.php).
